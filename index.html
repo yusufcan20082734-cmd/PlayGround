@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090d18">
+  <title>Neon Oda — Kristal Avı</title>
+  <style>
+    :root { color-scheme: dark; --cyan:#62f5e5; --pink:#ff5e91; --ink:#090d18; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; touch-action:none; }
+    canvas { display:block; width:100%; height:100%; }
+    #hud { position:fixed; inset:0; pointer-events:none; color:#f5fbff; }
+    .topbar { position:absolute; top:max(16px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:min(680px,calc(100% - 28px)); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .brand { display:flex; align-items:center; gap:10px; min-width:0; }
+    .brand-mark { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; color:#051a1a; font-size:20px; font-weight:900; background:linear-gradient(135deg,#9bffed,#45c9ee); box-shadow:0 0 25px #4de8dc55; }
+    .brand-copy { line-height:1.05; text-shadow:0 2px 8px #000; }
+    .brand-copy strong { display:block; font-size:13px; letter-spacing:.14em; }
+    .brand-copy small { color:#91a9b9; font-size:10px; letter-spacing:.12em; }
+    .stats { display:flex; gap:8px; align-items:center; }
+    .stat { min-width:74px; padding:8px 12px; border:1px solid #ffffff20; border-radius:13px; background:#0a1222c9; backdrop-filter:blur(12px); text-align:center; box-shadow:0 6px 24px #0003; }
+    .stat small { display:block; color:#88a1b3; font-size:9px; font-weight:700; letter-spacing:.15em; }
+    .stat b { font-size:17px; font-variant-numeric:tabular-nums; }
+    #timer.low { color:#ff7299; border-color:#ff5e9166; }
+    .icon-button { pointer-events:auto; border:1px solid #ffffff27; color:#dffaff; background:#101a2acc; width:38px; height:38px; border-radius:12px; font-size:16px; cursor:pointer; }
+    .progress-wrap { position:absolute; top:78px; left:50%; transform:translateX(-50%); width:min(370px,calc(100% - 48px)); }
+    .progress-label { display:flex; justify-content:space-between; margin-bottom:6px; color:#aac0ca; font-size:10px; letter-spacing:.1em; text-transform:uppercase; text-shadow:0 2px 5px #000; }
+    .progress-track { height:5px; background:#ffffff22; border-radius:8px; overflow:hidden; box-shadow:0 2px 9px #0008; }
+    #progress { width:0%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#35d9db,#a7ffcf); box-shadow:0 0 12px #42f6df; transition:width .25s ease; }
+    #hint { position:absolute; top:112px; left:50%; transform:translateX(-50%); color:#d7e8eb; font-size:11px; letter-spacing:.04em; text-shadow:0 2px 6px #000; white-space:nowrap; }
+    #toast { position:absolute; left:50%; top:34%; transform:translate(-50%,-10px); opacity:0; padding:9px 16px; color:#bffff4; font-weight:800; letter-spacing:.12em; font-size:12px; border:1px solid #63f4d766; border-radius:99px; background:#071b20dd; transition:all .22s; }
+    #toast.show { opacity:1; transform:translate(-50%,0); }
+    #joystick { display:none; position:absolute; left:max(24px,env(safe-area-inset-left)); bottom:max(28px,env(safe-area-inset-bottom)); width:122px; height:122px; pointer-events:auto; border-radius:50%; border:1px solid #ffffff2a; background:#0b152d70; box-shadow:inset 0 0 24px #5fe5ff16; touch-action:none; }
+    #stick { position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px; border-radius:50%; border:1px solid #a3fff799; background:linear-gradient(145deg,#8fffe7e0,#22a9c5d9); box-shadow:0 4px 20px #26d7d766; }
+    .mobile-tip { display:none; position:absolute; bottom:max(42px,env(safe-area-inset-bottom)); right:20px; color:#adc4d0; font-size:10px; text-align:right; line-height:1.55; text-shadow:0 2px 5px #000; }
+    #overlay { position:fixed; inset:0; z-index:4; display:grid; place-items:center; padding:20px; background:radial-gradient(ellipse at 50% 40%,#1426426e,#060a13c9 72%); color:#f5fbff; }
+    #overlay.hidden { display:none; }
+    .panel { width:min(430px,100%); padding:30px 28px 26px; border:1px solid #ffffff26; border-radius:25px; background:linear-gradient(145deg,#111d30ee,#0c1323f2); box-shadow:0 25px 90px #0009,inset 0 1px #ffffff12; text-align:center; backdrop-filter:blur(16px); }
+    .eyebrow { color:var(--cyan); font-size:10px; font-weight:800; letter-spacing:.24em; text-transform:uppercase; }
+    h1 { margin:10px 0 8px; font-size:clamp(28px,8vw,42px); line-height:1; letter-spacing:-.05em; }
+    .subtitle { max-width:320px; margin:0 auto 21px; color:#aabacb; font-size:13px; line-height:1.6; }
+    .objective { display:flex; justify-content:center; gap:10px; margin:0 auto 22px; color:#c6d9e3; font-size:11px; }
+    .objective span { padding:8px 10px; border:1px solid #ffffff18; border-radius:10px; background:#ffffff08; }
+    .primary { width:100%; border:0; border-radius:14px; padding:14px 18px; color:#06171b; background:linear-gradient(100deg,#86ffe1,#43d5e8); font-size:13px; font-weight:900; letter-spacing:.12em; cursor:pointer; box-shadow:0 8px 28px #4be7d633; }
+    .primary:active { transform:scale(.985); }
+    .footnote { margin-top:13px; color:#718397; font-size:10px; }
+    #final-score { color:var(--cyan); font-size:24px; font-weight:900; margin:0 0 16px; }
+    @media (pointer:coarse), (max-width:700px) { #joystick { display:block; } .mobile-tip { display:block; } .brand-copy small { display:none; } .stat { min-width:61px; padding:7px 9px; } .stat b { font-size:15px; } .topbar { top:max(12px,env(safe-area-inset-top)); } .progress-wrap { top:67px; } #hint { top:96px; font-size:10px; } }
+    @media (max-width:370px) { .brand-mark { width:32px;height:32px; } .brand-copy strong {font-size:11px;} .stat { min-width:54px;padding:6px 7px; } }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="topbar">
+      <div class="brand"><div class="brand-mark">✦</div><div class="brand-copy"><strong>NEON ODA</strong><small>KRİSTAL AVI</small></div></div>
+      <div class="stats">
+        <div class="stat"><small>KRİSTAL</small><b><span id="score">0</span><span style="color:#6b8797"> / 8</span></b></div>
+        <div class="stat" id="timer"><small>SÜRE</small><b id="time">60</b></div>
+        <button id="pause" class="icon-button" aria-label="Duraklat">Ⅱ</button>
+      </div>
+    </div>
+    <div class="progress-wrap"><div class="progress-label"><span>Enerji yüklemesi</span><span id="percent">0%</span></div><div class="progress-track"><div id="progress"></div></div></div>
+    <div id="hint">Kristalleri topla, nöbetçi dronlardan kaç!</div>
+    <div id="toast">+1 KRİSTAL</div>
+    <div id="joystick" aria-label="Hareket kontrolü"><div id="stick"></div></div>
+    <div class="mobile-tip">SÜRÜKLE<br>HAREKET ET</div>
+  </div>
+  <div id="overlay">
+    <section class="panel">
+      <div class="eyebrow">mini 3d oyun · mobil uyumlu</div>
+      <h1 id="panel-title">Kristal Avı</h1>
+      <p class="subtitle" id="panel-copy">Neon odaya dal, 60 saniye içinde 8 enerji kristalini topla. Dronlara çarparsan 3 saniye kaybedersin!</p>
+      <div class="objective" id="objective"><span>✦ &nbsp;8 kristal</span><span>◷ &nbsp;60 saniye</span></div>
+      <div id="final-score" hidden></div>
+      <button id="start" class="primary">OYUNA BAŞLA</button>
+      <div class="footnote" id="footnote">WASD / ok tuşları veya ekrandaki joystick</div>
+    </section>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x080d18);
+    scene.fog = new THREE.Fog(0x080d18, 19, 38);
+    const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.8));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0x9bdcff, 0x111425, 1.15));
+    const keyLight = new THREE.DirectionalLight(0xc8faff, 2.0);
+    keyLight.position.set(-5, 11, 7); keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024,1024);
+    keyLight.shadow.camera.left=-15; keyLight.shadow.camera.right=15;
+    keyLight.shadow.camera.top=15; keyLight.shadow.camera.bottom=-15;
+    scene.add(keyLight);
+    const cyanLight = new THREE.PointLight(0x29dddb, 1.5, 18); cyanLight.position.set(-8,3,0); scene.add(cyanLight);
+    const pinkLight = new THREE.PointLight(0x913bff, 1.2, 18); pinkLight.position.set(8,3,-7); scene.add(pinkLight);
+
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(26,26), new THREE.MeshStandardMaterial({color:0x111b2b, roughness:.74, metalness:.18}));
+    floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+    const grid = new THREE.GridHelper(26,26,0x246e82,0x1b344b); grid.position.y=.012; grid.material.transparent=true; grid.material.opacity=.35; scene.add(grid);
+    const room = new THREE.Group(); scene.add(room);
+    const wallMat = new THREE.MeshStandardMaterial({color:0x17263b, roughness:.66, metalness:.24});
+    function addBox(parent, x,y,z, sx,sy,sz, mat, cast=true) {
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat);
+      mesh.position.set(x,y,z); mesh.castShadow=cast; mesh.receiveShadow=true; parent.add(mesh); return mesh;
+    }
+    // Low perimeter walls and luminous trims keep the arena legible from every angle.
+    addBox(room,0,1,-13,26,2,0.55,wallMat); addBox(room,0,1,13,26,2,0.55,wallMat);
+    addBox(room,-13,1,0,.55,2,26,wallMat); addBox(room,13,1,0,.55,2,26,wallMat);
+    const trimMat=new THREE.MeshStandardMaterial({color:0x2ad9e3,emissive:0x0b8294,emissiveIntensity:1.5,metalness:.45,roughness:.3});
+    addBox(room,0,1.9,-12.68,25.8,.055,.07,trimMat,false); addBox(room,0,1.9,12.68,25.8,.055,.07,trimMat,false);
+    addBox(room,-12.68,1.9,0,.07,.055,25.8,trimMat,false); addBox(room,12.68,1.9,0,.07,.055,25.8,trimMat,false);
+    const pillarMat=new THREE.MeshStandardMaterial({color:0x26374d,roughness:.55,metalness:.32});
+    const obstacles=[];
+    [[-7,-6],[7,-6],[-7,6],[7,6],[-3,0],[4,2]].forEach(([x,z],i)=>{
+      const pillar=addBox(room,x,.85,z,1.3,1.7,1.3,pillarMat);
+      const cap=addBox(room,x,1.72,z,1.38,.09,1.38,i%2?trimMat:new THREE.MeshStandardMaterial({color:0x9a5dff,emissive:0x6424b6,emissiveIntensity:1.1}),false);
+      obstacles.push({x,z,r:.92});
+    });
+    // Floor decals / landing pads.
+    const ringMat=new THREE.MeshBasicMaterial({color:0x42c8d8,transparent:true,opacity:.22,side:THREE.DoubleSide});
+    for (let i=0;i<4;i++) { const ring=new THREE.Mesh(new THREE.RingGeometry(1.05,1.12,48),ringMat); ring.rotation.x=-Math.PI/2; ring.position.set(i<2?-9:9,.025,i%2?-9:9); scene.add(ring); }
+
+    // Player: friendly little hover bot with a glowing eye and orbiting antenna.
+    const player=new THREE.Group(); scene.add(player);
+    const shellMat=new THREE.MeshStandardMaterial({color:0x69eadd,metalness:.58,roughness:.25,emissive:0x0b4d52,emissiveIntensity:.42});
+    const darkMat=new THREE.MeshStandardMaterial({color:0x102536,metalness:.55,roughness:.3});
+    const body=new THREE.Mesh(new THREE.SphereGeometry(.48,24,18),shellMat); body.scale.set(.82,1, .72); body.position.y=.72; body.castShadow=true; player.add(body);
+    const visor=new THREE.Mesh(new THREE.SphereGeometry(.31,20,14),new THREE.MeshStandardMaterial({color:0x0b1722,metalness:.4,roughness:.16,emissive:0x062b3b})); visor.scale.set(1,.48,.35); visor.position.set(0,.82,-.29); player.add(visor);
+    const eyeMat=new THREE.MeshBasicMaterial({color:0x9cfff0});
+    [-.105,.105].forEach(x=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(.042,10,8),eyeMat);eye.position.set(x,.83,-.4);player.add(eye);});
+    const antenna=new THREE.Group(); antenna.position.y=1.2; player.add(antenna);
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.22,8),darkMat); stem.position.y=.1; antenna.add(stem);
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(.08,12,10),new THREE.MeshBasicMaterial({color:0x9bfff2})); orb.position.y=.23; antenna.add(orb);
+    const shadow=new THREE.Mesh(new THREE.CircleGeometry(.48,24),new THREE.MeshBasicMaterial({color:0x030711,transparent:true,opacity:.48})); shadow.rotation.x=-Math.PI/2; shadow.position.y=.03; player.add(shadow);
+
+    const crystals=[];
+    const crystalSpots=[[-9,-4],[8,-9],[-5,8],[10,4],[1,-10],[-10,9],[5,7],[0,4],[-2,-6],[9,0],[-8,2],[4,-3]];
+    const crystalGeo=new THREE.OctahedronGeometry(.43,0);
+    const crystalMat=new THREE.MeshStandardMaterial({color:0xb5fff3,emissive:0x25d6ca,emissiveIntensity:1.8,metalness:.35,roughness:.18});
+    const crystalCoreMat=new THREE.MeshBasicMaterial({color:0xe4fff9});
+    crystalSpots.forEach(([x,z],i)=>{
+      const group=new THREE.Group(); group.position.set(x,.75,z); group.userData.phase=i*1.7;
+      const gem=new THREE.Mesh(crystalGeo,crystalMat); gem.castShadow=true; group.add(gem);
+      const core=new THREE.Mesh(new THREE.OctahedronGeometry(.19,0),crystalCoreMat); core.rotation.y=Math.PI/4; group.add(core);
+      const halo=new THREE.Mesh(new THREE.TorusGeometry(.61,.018,6,36),new THREE.MeshBasicMaterial({color:0x51e9dc,transparent:true,opacity:.58})); halo.rotation.x=Math.PI/2; group.add(halo);
+      const light=new THREE.PointLight(0x42f5dc,.65,3); light.position.y=.1; group.add(light);
+      scene.add(group); crystals.push({group,x,z,active:i<8}); group.visible=i<8;
+    });
+
+    const drones=[];
+    const droneMat=new THREE.MeshStandardMaterial({color:0xff638e,metalness:.5,roughness:.25,emissive:0x7d153b,emissiveIntensity:.8});
+    const droneGlow=new THREE.MeshBasicMaterial({color:0xffc2d6});
+    [[-8,5],[8,-3],[2,-8]].forEach(([x,z],i)=>{
+      const group=new THREE.Group(); group.position.set(x,.72,z); scene.add(group);
+      const core=new THREE.Mesh(new THREE.SphereGeometry(.38,18,14),droneMat); core.scale.set(1.25,.72,1.05); core.castShadow=true; group.add(core);
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),droneGlow); eye.position.set(0,.02,-.35); group.add(eye);
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,7,24),new THREE.MeshBasicMaterial({color:0xff5d94,transparent:true,opacity:.75})); ring.rotation.x=Math.PI/2; group.add(ring);
+      const light=new THREE.PointLight(0xff3d82,.7,3); group.add(light);
+      drones.push({group,x,z,phase:i*2.15,hitLock:0});
+    });
+
+    const ui={score:document.querySelector('#score'),time:document.querySelector('#time'),timer:document.querySelector('#timer'),progress:document.querySelector('#progress'),percent:document.querySelector('#percent'),overlay:document.querySelector('#overlay'),title:document.querySelector('#panel-title'),copy:document.querySelector('#panel-copy'),objective:document.querySelector('#objective'),final:document.querySelector('#final-score'),start:document.querySelector('#start'),footnote:document.querySelector('#footnote'),pause:document.querySelector('#pause'),toast:document.querySelector('#toast')};
+    const keys=new Set(); const joy={x:0,y:0,active:false,pointer:null};
+    let score=0, timeLeft=60, playing=false, paused=false, ended=false, toastTimer=0, lastTime=0, elapsed=0, invulnerable=0;
+    const clock=new THREE.Clock();
+    const playerPos=new THREE.Vector3(0,0,10);
+    player.position.copy(playerPos);
+    const cameraOffset=new THREE.Vector3(0,12,15);
+    camera.position.set(0,13,25); camera.lookAt(0,0,0);
+    function showToast(text) { ui.toast.textContent=text; ui.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),850); }
+    function updateHud() { ui.score.textContent=score; ui.time.textContent=Math.max(0,Math.ceil(timeLeft)); ui.timer.classList.toggle('low',timeLeft<=10); const p=Math.min(100,score/8*100); ui.progress.style.width=p+'%'; ui.percent.textContent=Math.round(p)+'%'; }
+    function setOverlay(mode) {
+      ui.overlay.classList.remove('hidden');
+      if(mode==='start') { ui.title.textContent='Kristal Avı'; ui.copy.textContent='Neon odaya dal, 60 saniye içinde 8 enerji kristalini topla. Dronlara çarparsan 3 saniye kaybedersin!'; ui.objective.hidden=false; ui.final.hidden=true; ui.start.textContent='OYUNA BAŞLA'; ui.footnote.textContent='WASD / ok tuşları veya ekrandaki joystick'; }
+      if(mode==='pause') { ui.title.textContent='Mola Zamanı'; ui.copy.textContent='Kristaller seni bekliyor. Hazır olduğunda kaldığın yerden devam et!'; ui.objective.hidden=true; ui.final.hidden=true; ui.start.textContent='DEVAM ET'; ui.footnote.textContent='Oyunu istediğin zaman duraklatabilirsin'; }
+      if(mode==='win'||mode==='lose') { ui.title.textContent=mode==='win'?'Harika İş!':'Süre Doldu!'; ui.copy.textContent=mode==='win'?'Odanın enerjisini tamamen doldurdun. Müthiş bir koşuydu!':'Bu kez olmadı; bir tur daha deneyip rekorunu kır!'; ui.objective.hidden=true; ui.final.hidden=false; ui.final.textContent=`${score} / 8 kristal`; ui.start.textContent='TEKRAR OYNA'; ui.footnote.textContent=''; }
+    }
+    function resetGame() {
+      score=0; timeLeft=60; playing=true; paused=false; ended=false; invulnerable=0;
+      playerPos.set(0,0,10); player.position.copy(playerPos); player.rotation.y=0;
+      crystals.forEach((c,i)=>{c.active=i<8;c.group.visible=c.active;});
+      drones.forEach(d=>{d.hitLock=0;});
+      updateHud(); ui.overlay.classList.add('hidden'); ui.pause.textContent='Ⅱ'; clock.getDelta(); lastTime=performance.now();
+    }
+    function finish(win) { playing=false; paused=false; ended=true; ui.pause.textContent='Ⅱ'; setOverlay(win?'win':'lose'); }
+    ui.start.addEventListener('click',()=>{ if(paused&&!ended){paused=false;playing=true;ui.overlay.classList.add('hidden');ui.pause.textContent='Ⅱ';lastTime=performance.now();}else resetGame(); });
+    ui.pause.addEventListener('click',()=>{ if(ended)return; if(!playing&&!paused)return; if(paused){paused=false;playing=true;ui.overlay.classList.add('hidden');ui.pause.textContent='Ⅱ';lastTime=performance.now();}else{paused=true;playing=false;ui.pause.textContent='▶';setOverlay('pause');} });
+    window.addEventListener('keydown',e=>{ const key=e.key.toLowerCase(); if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key))e.preventDefault(); if(key==='escape'||key==='p'){if(playing)ui.pause.click();else if(paused)ui.pause.click();} keys.add(key); });
+    window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+    const joystick=document.querySelector('#joystick'), stick=document.querySelector('#stick');
+    function moveStick(e) { const rect=joystick.getBoundingClientRect(), cx=rect.left+rect.width/2, cy=rect.top+rect.height/2; let dx=e.clientX-cx,dy=e.clientY-cy; const max=rect.width*.34, len=Math.hypot(dx,dy); if(len>max){dx=dx/len*max;dy=dy/len*max;} joy.x=dx/max;joy.y=dy/max;stick.style.transform=`translate(${dx}px,${dy}px)`; }
+    joystick.addEventListener('pointerdown',e=>{e.preventDefault();joy.active=true;joy.pointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveStick(e);});
+    joystick.addEventListener('pointermove',e=>{if(joy.active&&e.pointerId===joy.pointer)moveStick(e);});
+    function releaseStick(e){if(!joy.active||e.pointerId!==joy.pointer)return;joy.active=false;joy.x=joy.y=0;stick.style.transform='';}
+    joystick.addEventListener('pointerup',releaseStick); joystick.addEventListener('pointercancel',releaseStick);
+
+    function update(dt) {
+      elapsed+=dt;
+      const forward=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y;
+      const side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;
+      const inputLen=Math.hypot(side,forward);
+      if(inputLen>.05) {
+        const vx=side/inputLen, vz=-forward/inputLen;
+        const speed=5.8;
+        const nx=THREE.MathUtils.clamp(playerPos.x+vx*speed*dt,-11.7,11.7), nz=THREE.MathUtils.clamp(playerPos.z+vz*speed*dt,-11.7,11.7);
+        let blocked=false;
+        for(const o of obstacles) if(Math.hypot(nx-o.x,nz-o.z)<o.r+.38){blocked=true;break;}
+        if(!blocked){playerPos.x=nx;playerPos.z=nz;}
+        player.rotation.y=Math.atan2(vx,vz);
+      }
+      player.position.x=playerPos.x; player.position.z=playerPos.z;
+      player.position.y=Math.sin(elapsed*5)*.045;
+      body.rotation.z=inputLen>.05?Math.sin(elapsed*13)*.045:Math.sin(elapsed*2)*.018;
+      antenna.rotation.y=elapsed*1.8;
+      for(const c of crystals) if(c.active){c.group.rotation.y+=dt*1.35;c.group.position.y=.74+Math.sin(elapsed*2.5+c.group.userData.phase)*.12;}
+      if(invulnerable>0) {invulnerable-=dt; player.visible=Math.floor(elapsed*12)%2===0;} else player.visible=true;
+      drones.forEach(d=>{
+        d.group.position.x=d.x+Math.sin(elapsed*.72+d.phase)*1.35;
+        d.group.position.z=d.z+Math.cos(elapsed*.58+d.phase)*1.15;
+        d.group.position.y=.72+Math.sin(elapsed*3+d.phase)*.12;
+        d.group.rotation.y=elapsed*.8+d.phase;
+        d.hitLock=Math.max(0,d.hitLock-dt);
+        if(d.hitLock===0&&invulnerable<=0&&Math.hypot(playerPos.x-d.group.position.x,playerPos.z-d.group.position.z)<.88){
+          timeLeft=Math.max(0,timeLeft-3); d.hitLock=1.2; invulnerable=1.35; showToast('−3 SANİYE!'); updateHud();
+          const dx=playerPos.x-d.group.position.x,dz=playerPos.z-d.group.position.z,len=Math.hypot(dx,dz)||1;
+          playerPos.x=THREE.MathUtils.clamp(playerPos.x+dx/len*1.25,-11.7,11.7);playerPos.z=THREE.MathUtils.clamp(playerPos.z+dz/len*1.25,-11.7,11.7);
+        }
+      });
+      for(const c of crystals) if(c.active&&Math.hypot(playerPos.x-c.x,playerPos.z-c.z)<.95){c.active=false;c.group.visible=false;score++;showToast('+1 KRİSTAL');updateHud();if(score>=8){finish(true);return;}}
+      timeLeft-=dt; updateHud(); if(timeLeft<=0)finish(false);
+      const target=new THREE.Vector3(playerPos.x+cameraOffset.x, playerPos.y+cameraOffset.y, playerPos.z+cameraOffset.z);
+      camera.position.lerp(target,1-Math.pow(.001,dt)); camera.lookAt(playerPos.x,.1,playerPos.z);
+    }
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt=Math.min(.04,Math.max(0,(now-lastTime)/1000)); lastTime=now;
+      if(playing&&!paused)update(dt);
+      else {
+        elapsed+=dt*.45;
+        crystals.forEach(c=>{if(c.active){c.group.rotation.y+=dt*.45;c.group.position.y=.74+Math.sin(elapsed*2+c.group.userData.phase)*.08;}});
+        camera.position.lerp(new THREE.Vector3(playerPos.x+cameraOffset.x,playerPos.y+cameraOffset.y,playerPos.z+cameraOffset.z),.025); camera.lookAt(playerPos.x,.1,playerPos.z);
+      }
+      renderer.render(scene,camera);
+    }
+    requestAnimationFrame(animate);
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.8));});
+    updateHud(); setOverlay('start');
+  })();
+  </script>
+</body>
+</html>
